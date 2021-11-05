@@ -28,6 +28,19 @@ fruit:
         crunchiness:
           value: 10
           operator: ge
+    nasty:
+      input:
+        type: dict
+        value:
+          color: brown
+          crunchiness: 0
+      settings:
+        color:
+          value: brown
+          operator: eq
+        crunchiness:
+          value: 5
+          operator: le
   oranges:
     tasty:
       input:

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 class YStructException(Exception):
     pass
 
@@ -82,7 +81,10 @@ class YAMLDefSection(YAMLDefBase):
         self.parent = parent
         self.content = content
         self.sections = []
-        self.overrides = overrides or {}
+        self.overrides = {}
+        if overrides:
+            self.overrides.update(overrides)
+
         if override_handlers:
             self.set_override_handlers(override_handlers)
 

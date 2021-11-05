@@ -50,15 +50,26 @@ class TestYStruct(BaseTestCase):
             for leaf in root.leaf_sections:
                 self.assertEquals(leaf.input.type, 'dict')
                 if leaf.parent.name == 'apples':
-                    self.assertEquals(str(leaf.message),
-                                      'they make good cider.')
-                    self.assertIsNone(leaf.message_alt, None)
-                    self.assertEquals(leaf.input.value,
-                                      {'color': 'red', 'crunchiness': 15})
-                    self.assertEquals(leaf.settings.crunchiness,
-                                      {'operator': 'ge', 'value': 10})
-                    self.assertEquals(leaf.settings.color,
-                                      {'operator': 'eq', 'value': 'red'})
+                    if leaf.name == 'tasty':
+                        self.assertEquals(str(leaf.message),
+                                          'they make good cider.')
+                        self.assertIsNone(leaf.message_alt, None)
+                        self.assertEquals(leaf.input.value,
+                                          {'color': 'red', 'crunchiness': 15})
+                        self.assertEquals(leaf.settings.crunchiness,
+                                          {'operator': 'ge', 'value': 10})
+                        self.assertEquals(leaf.settings.color,
+                                          {'operator': 'eq', 'value': 'red'})
+                    else:
+                        self.assertEquals(str(leaf.message),
+                                          'default message')
+                        self.assertIsNone(leaf.message_alt, None)
+                        self.assertEquals(leaf.input.value,
+                                          {'color': 'brown', 'crunchiness': 0})
+                        self.assertEquals(leaf.settings.crunchiness,
+                                          {'operator': 'le', 'value': 5})
+                        self.assertEquals(leaf.settings.color,
+                                          {'operator': 'eq', 'value': 'brown'})
                 else:
                     self.assertEquals(str(leaf.message),
                                       'they make good juice.')
