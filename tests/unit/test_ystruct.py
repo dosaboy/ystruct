@@ -21,7 +21,11 @@ from ystruct.ystruct import (
 )
 
 
-class YAMLDefInput(YAMLDefOverrideBase):
+class YAMLDefCustomerOverrideBase(YAMLDefOverrideBase):
+    pass
+
+
+class YAMLDefInput(YAMLDefCustomerOverrideBase):
     KEY = 'input'
 
 

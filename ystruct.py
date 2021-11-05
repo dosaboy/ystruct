@@ -21,13 +21,23 @@ class YAMLDefOverrideBase(object):
     KEY = None
 
     def __init__(self, content):
-        self.content = content
+        self._content = content
+
+    @property
+    def content(self):
+        return self._content
+
+    def __dict__(self, name):
+        name = name.replace('-', '_')
+        return self.content[name]
 
     def __getattr__(self, name):
-        return self.content[name]
+        name = name.replace('-', '_')
+        return self.content.get(name)
 
 
 class YAMLDefBase(object):
+    # We want these to be global/common to all sections
     _override_handlers = []
 
     def _find_leaf_sections(self, section):
@@ -39,6 +49,10 @@ class YAMLDefBase(object):
             leaves += self._find_leaf_sections(s)
 
         return leaves
+
+    @property
+    def branch_sections(self):
+        return [s.parent for s in self.leaf_sections]
 
     @property
     def leaf_sections(self):
@@ -87,5 +101,10 @@ class YAMLDefSection(YAMLDefBase):
     def is_leaf(self):
         return len(self.sections) == 0
 
-    def __getattr__(self, name):
+    def __dict__(self, name):
+        name = name.replace('-', '_')
         return self.overrides[name]
+
+    def __getattr__(self, name):
+        name = name.replace('-', '_')
+        return self.overrides.get(name)
