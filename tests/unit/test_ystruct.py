@@ -26,15 +26,18 @@ class YAMLDefCustomerOverrideBase(YAMLDefOverrideBase):
 
 
 class YAMLDefInput(YAMLDefCustomerOverrideBase):
-    KEY = 'input'
+    KEYS = ['input']
 
 
 class YAMLDefMessage(YAMLDefOverrideBase):
-    KEY = 'message'
+    KEYS = ['message', 'message-alt']
+
+    def __str__(self):
+        return self.content
 
 
 class YAMLDefSettings(YAMLDefOverrideBase):
-    KEY = 'settings'
+    KEYS = ['settings']
 
 
 class TestYStruct(BaseTestCase):
@@ -47,6 +50,9 @@ class TestYStruct(BaseTestCase):
             for leaf in root.leaf_sections:
                 self.assertEquals(leaf.input.type, 'dict')
                 if leaf.parent.name == 'apples':
+                    self.assertEquals(str(leaf.message),
+                                      'they make good cider.')
+                    self.assertIsNone(leaf.message_alt, None)
                     self.assertEquals(leaf.input.value,
                                       {'color': 'red', 'crunchiness': 15})
                     self.assertEquals(leaf.settings.crunchiness,
@@ -54,6 +60,10 @@ class TestYStruct(BaseTestCase):
                     self.assertEquals(leaf.settings.color,
                                       {'operator': 'eq', 'value': 'red'})
                 else:
+                    self.assertEquals(str(leaf.message),
+                                      'they make good juice.')
+                    self.assertEquals(str(leaf.message_alt),
+                                      'and good marmalade.')
                     self.assertEquals(leaf.input.value,
                                       {'acidity': 2, 'color': 'orange'})
                     self.assertEquals(leaf.settings.acidity,

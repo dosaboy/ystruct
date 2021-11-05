@@ -36,6 +36,7 @@ fruit:
           color: orange
           acidity: 2 
       message: they make good juice.
+      message-alt: and good marmalade.
       settings:
         color:
           value: red

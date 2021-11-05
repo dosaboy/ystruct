@@ -18,7 +18,7 @@ class YStructException(Exception):
 
 
 class YAMLDefOverrideBase(object):
-    KEY = None
+    KEYS = None
 
     def __init__(self, content):
         self._content = content
@@ -28,11 +28,11 @@ class YAMLDefOverrideBase(object):
         return self._content
 
     def __dict__(self, name):
-        name = name.replace('-', '_')
+        name = name.replace('_', '-')
         return self.content[name]
 
     def __getattr__(self, name):
-        name = name.replace('-', '_')
+        name = name.replace('_', '-')
         return self.content.get(name)
 
 
@@ -60,11 +60,15 @@ class YAMLDefBase(object):
 
     @property
     def override_keys(self):
-        return [o.KEY for o in self._override_handlers]
+        keys = []
+        for o in self._override_handlers:
+            keys += o.KEYS
+
+        return keys
 
     def get_override_handler(self, name):
         for o in self._override_handlers:
-            if o.KEY == name:
+            if name in o.KEYS:
                 return o
 
     def set_override_handlers(self, override_handlers):
@@ -102,9 +106,9 @@ class YAMLDefSection(YAMLDefBase):
         return len(self.sections) == 0
 
     def __dict__(self, name):
-        name = name.replace('-', '_')
+        name = name.replace('_', '-')
         return self.overrides[name]
 
     def __getattr__(self, name):
-        name = name.replace('-', '_')
+        name = name.replace('_', '-')
         return self.overrides.get(name)
