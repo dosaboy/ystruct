@@ -30,8 +30,8 @@ class YAMLDefOverrideBase(object):
         name = name.replace('_', '-')
         try:
             return self.content[name]
-        except KeyError:
-            raise AttributeError(name)
+        except KeyError as e:
+            raise AttributeError from e
 
 
 class YAMLDefBase(object):
