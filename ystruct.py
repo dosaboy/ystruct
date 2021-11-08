@@ -26,13 +26,12 @@ class YAMLDefOverrideBase(object):
     def content(self):
         return self._content
 
-    def __dict__(self, name):
-        name = name.replace('_', '-')
-        return self.content[name]
-
     def __getattr__(self, name):
         name = name.replace('_', '-')
-        return self.content.get(name)
+        try:
+            return self.content[name]
+        except KeyError:
+            raise AttributeError(name)
 
 
 class YAMLDefBase(object):
@@ -106,10 +105,6 @@ class YAMLDefSection(YAMLDefBase):
     @property
     def is_leaf(self):
         return len(self.sections) == 0
-
-    def __dict__(self, name):
-        name = name.replace('_', '-')
-        return self.overrides[name]
 
     def __getattr__(self, name):
         name = name.replace('_', '-')
