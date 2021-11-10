@@ -81,3 +81,9 @@ class TestYStruct(BaseTestCase):
                                       {'operator': 'lt', 'value': 5})
                     self.assertEquals(leaf.settings.color,
                                       {'operator': 'eq', 'value': 'red'})
+
+    def test_empty_struct(self):
+        overrides = [YAMLDefInput, YAMLDefMessage, YAMLDefSettings]
+        root = YAMLDefSection('root', {}, override_handlers=overrides)
+        for leaf in root.leaf_sections:
+            self.assertEquals(leaf.input.type, 'dict')
