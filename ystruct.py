@@ -19,7 +19,8 @@ class YStructException(Exception):
 class YAMLDefOverrideBase(object):
     KEYS = None
 
-    def __init__(self, content):
+    def __init__(self, name, content):
+        self._override_name = name
         self._content = content
 
     @property
@@ -96,7 +97,7 @@ class YAMLDefSection(YAMLDefBase):
         for name, content in self.content.items():
             if name in self.override_keys:
                 handler = self.get_override_handler(name)
-                self.overrides[name] = handler(content)
+                self.overrides[name] = handler(name, content)
                 continue
 
             s = YAMLDefSection(name, content, self.overrides, parent=self)
