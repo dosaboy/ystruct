@@ -36,6 +36,10 @@ class YAMLDefMessage(YAMLDefOverrideBase):
         return self.content
 
 
+class YAMLDefMeta(YAMLDefOverrideBase):
+    KEYS = ['meta']
+
+
 class YAMLDefSettings(YAMLDefOverrideBase):
     KEYS = ['settings']
 
@@ -43,11 +47,14 @@ class YAMLDefSettings(YAMLDefOverrideBase):
 class TestYStruct(BaseTestCase):
 
     def test_struct(self):
-        overrides = [YAMLDefInput, YAMLDefMessage, YAMLDefSettings]
+        overrides = [YAMLDefInput, YAMLDefMessage, YAMLDefSettings,
+                     YAMLDefMeta]
         with open('examples/checks.yaml') as fd:
-            root = YAMLDefSection('root', yaml.safe_load(fd.read()),
+            root = YAMLDefSection('fruit tastiness', yaml.safe_load(fd.read()),
                                   override_handlers=overrides)
             for leaf in root.leaf_sections:
+                self.assertEquals(leaf.meta.category, 'tastiness')
+                self.assertEquals(leaf.root.name, 'fruit tastiness')
                 self.assertEquals(leaf.input.type, 'dict')
                 if leaf.parent.name == 'apples':
                     if leaf.name == 'tasty':

@@ -57,3 +57,5 @@ fruit:
         acidity:
           value: 5
           operator: lt
+meta:
+  category: tastiness
