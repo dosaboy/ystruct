@@ -13,44 +13,132 @@
 # limitations under the License.
 import yaml
 
-from .utils import BaseTestCase
+from . import utils
 
 from ystruct.ystruct import (
-    YAMLDefOverrideBase,
-    YAMLDefSection
+    YStructOverrideBase,
+    YStructMappedOverrideBase,
+    YStructSection
 )
 
 
-class YAMLDefCustomerOverrideBase(YAMLDefOverrideBase):
+class YStructCustomOverrideBase(YStructOverrideBase):
     pass
 
 
-class YAMLDefInput(YAMLDefCustomerOverrideBase):
-    KEYS = ['input']
+class YStructInput(YStructCustomOverrideBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['input']
 
 
-class YAMLDefMessage(YAMLDefOverrideBase):
-    KEYS = ['message', 'message-alt']
+class YStructMessage(YStructOverrideBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['message', 'message-alt']
 
     def __str__(self):
         return self.content
 
 
-class YAMLDefMeta(YAMLDefOverrideBase):
-    KEYS = ['meta']
+class YStructMeta(YStructOverrideBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['meta']
 
 
-class YAMLDefSettings(YAMLDefOverrideBase):
-    KEYS = ['settings']
+class YStructSettings(YStructOverrideBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['settings']
+
+    @property
+    def a_property(self):
+        return "i am a property"
 
 
-class TestYStruct(BaseTestCase):
+class YStructAction(YStructOverrideBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['action']
+
+
+class YStructMappedGroupBase(YStructMappedOverrideBase):
+
+    @classmethod
+    def _override_mapped_member_types(cls):
+        return [YStructSettings, YStructAction]
+
+    @property
+    def all(self):
+        _all = {}
+        if self.settings:
+            _all['settings'] = self.settings.content
+
+        if self.action:
+            _all['action'] = self.action.content
+
+        return _all
+
+
+class YStructMappedGroupLogicalOpt(YStructMappedGroupBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['and', 'or', 'not']
+
+
+class YStructMappedGroup(YStructMappedGroupBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['group']
+
+    @classmethod
+    def _override_mapped_member_types(cls):
+        return super()._override_mapped_member_types() + \
+                    [YStructMappedGroupLogicalOpt]
+
+
+class YStructMappedRefsBase(YStructMappedOverrideBase):
+
+    @classmethod
+    def _override_mapped_member_types(cls):
+        # has no members
+        return []
+
+
+class YStructMappedRefsLogicalOpt(YStructMappedRefsBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['and', 'or', 'not']
+
+
+class YStructMappedRefs(YStructMappedRefsBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['refs']
+
+    @classmethod
+    def _override_mapped_member_types(cls):
+        return super()._override_mapped_member_types() + \
+                    [YStructMappedRefsLogicalOpt]
+
+
+class TestYStruct(utils.BaseTestCase):
 
     def test_struct(self):
-        overrides = [YAMLDefInput, YAMLDefMessage, YAMLDefSettings,
-                     YAMLDefMeta]
+        overrides = [YStructInput, YStructMessage, YStructSettings,
+                     YStructMeta]
         with open('examples/checks.yaml') as fd:
-            root = YAMLDefSection('fruit tastiness', yaml.safe_load(fd.read()),
+            root = YStructSection('fruit tastiness', yaml.safe_load(fd.read()),
                                   override_handlers=overrides)
             for leaf in root.leaf_sections:
                 self.assertEqual(leaf.meta.category, 'tastiness')
@@ -90,7 +178,158 @@ class TestYStruct(BaseTestCase):
                                      {'operator': 'eq', 'value': 'red'})
 
     def test_empty_struct(self):
-        overrides = [YAMLDefInput, YAMLDefMessage, YAMLDefSettings]
-        root = YAMLDefSection('root', {}, override_handlers=overrides)
+        overrides = [YStructInput, YStructMessage, YStructSettings]
+        root = YStructSection('root', content={}, override_handlers=overrides)
         for leaf in root.leaf_sections:
             self.assertEqual(leaf.input.type, 'dict')
+
+    def test_struct_w_mapping(self):
+        with open('examples/checks2.yaml') as fd:
+            root = YStructSection('atest', yaml.safe_load(fd.read()),
+                                  override_handlers=[YStructMessage,
+                                                     YStructMappedGroup])
+            for leaf in root.leaf_sections:
+                self.assertTrue(leaf.name in ['item1', 'item2', 'item3',
+                                              'item4', 'item5'])
+                if leaf.name == 'item1':
+                    self.assertEqual(leaf.group.settings.plum, 'pie')
+                    self.assertEqual(leaf.group.action.eat, 'now')
+                    self.assertEqual(leaf.group.all,
+                                     {'settings': {'plum': 'pie'},
+                                      'action': {'eat': 'now'}})
+                elif leaf.name == 'item2':
+                    self.assertEqual(leaf.group.settings.apple, 'tart')
+                    self.assertEqual(leaf.group.action.eat, 'later')
+                    self.assertEqual(leaf.group.all,
+                                     {'settings': {'apple': 'tart'},
+                                      'action': {'eat': 'later'}})
+                elif leaf.name == 'item3':
+                    self.assertEqual(str(leaf.message), 'message not mapped')
+                    self.assertEqual(leaf.group.settings.ice, 'cream')
+                    self.assertEqual(leaf.group.action, None)
+                    self.assertEqual(leaf.group.all,
+                                     {'settings': {'ice': 'cream'}})
+                elif leaf.name == 'item4':
+                    self.assertEqual(leaf.group.settings.treacle, 'tart')
+                    self.assertEqual(leaf.group.action.want, 'more')
+                    self.assertEqual(leaf.group.all,
+                                     {'settings': {'treacle': 'tart'},
+                                      'action': {'want': 'more'}})
+                elif leaf.name == 'item5':
+                    self.assertEqual(len(leaf.group), 2)
+                    checked = 0
+                    for i, _group in enumerate(leaf.group):
+                        if i == 0:
+                            checked += 1
+                            self.assertEqual(_group.settings.strawberry,
+                                             'jam')
+                            self.assertEqual(_group.action.lots, 'please')
+                        elif i == 1:
+                            checked += 1
+                            self.assertEqual(_group.settings.cherry, 'jam')
+                            self.assertEqual(_group.action.lots, 'more')
+
+                    self.assertEqual(checked, 2)
+
+    def test_struct_w_metagroup_list(self):
+        s1 = {'settings': {'result': True}}
+        s2 = {'settings': {'result': False}}
+
+        content = {'item1': {'group': [s1, s2]}}
+
+        root = YStructSection('mgtest', content,
+                              override_handlers=[YStructMappedGroup])
+        for leaf in root.leaf_sections:
+            self.assertEqual(len(leaf.group), 1)
+            self.assertEqual(len(leaf.group.settings), 2)
+            results = [s.result for s in leaf.group.settings]
+
+        self.assertEqual(results, [True, False])
+
+    def test_struct_w_metagroup_w_logical_opt(self):
+        s1 = {'settings': {'result': True}}
+        s2 = {'settings': {'result': False}}
+
+        content = {'item1': {'group': {'and': [s1, s2]}}}
+
+        root = YStructSection('mgtest', content,
+                              override_handlers=[YStructMappedGroup])
+        for leaf in root.leaf_sections:
+            self.assertEqual(len(leaf.group), 1)
+            self.assertEqual(len(getattr(leaf.group, 'and').settings), 2)
+            results = [s.result for s in getattr(leaf.group, 'and').settings]
+
+        self.assertEqual(results, [True, False])
+
+    def test_struct_w_metagroup_w_multiple_logical_opts(self):
+        s1 = {'settings': {'result': True}}
+        s2 = {'settings': {'result': False}}
+        s3 = {'settings': {'result': False}}
+
+        content = {'item1': {'group': {'or': [s1, s2],
+                                       'and': s3}}}
+
+        root = YStructSection('mgtest', content,
+                              override_handlers=[YStructMappedGroup])
+        for leaf in root.leaf_sections:
+            self.assertEqual(len(leaf.group), 1)
+            self.assertEqual(len(getattr(leaf.group, 'and').settings), 1)
+            self.assertEqual(len(getattr(leaf.group, 'or').settings), 2)
+            results = [s.result for s in getattr(leaf.group, 'and').settings]
+            self.assertEqual(results, [False])
+            results = [s.result for s in getattr(leaf.group, 'or').settings]
+
+        self.assertEqual(results, [True, False])
+
+    def test_struct_w_metagroup_w_mixed_list(self):
+        s1 = {'settings': {'result': True}}
+        s2 = {'settings': {'result': False}}
+
+        content = {'item1': {'group': [{'or': s1}, s2]}}
+
+        root = YStructSection('mgtest', content,
+                              override_handlers=[YStructMappedGroup])
+        for leaf in root.leaf_sections:
+            self.assertEqual(len(leaf.group), 1)
+            self.assertEqual(len(getattr(leaf.group, 'or').settings), 1)
+            self.assertEqual(len(getattr(leaf.group, 'or')), 1)
+            results = []
+            for groupitem in leaf.group:
+                for item in groupitem:
+                    if item._override_name == 'or':
+                        for settings in item:
+                            for entry in settings:
+                                results.append(entry.result)
+                    else:
+                        for settings in item:
+                            results.append(settings.result)
+
+        self.assertEqual(sorted(results), sorted([True, False]))
+
+    def test_struct_w_metagroup_w_mixed_list_w_str_overrides(self):
+        content = {'item1': {'refs': [{'or': 'ref1',
+                                       'and': ['ref2', 'ref3']}, 'ref4']}}
+
+        root = YStructSection('mgtest', content,
+                              override_handlers=[YStructMappedRefs])
+        results = []
+        for leaf in root.leaf_sections:
+            self.assertEqual(leaf.name, 'item1')
+            for refs in leaf.refs:
+                self.assertEqual(refs.name, 'refs')
+                for item in refs:
+                    self.assertTrue(item._override_name in ['and', 'or',
+                                                            'ref4'])
+                    if item._override_name == 'or':
+                        self.assertEqual(len(item), 1)
+                        for subitem in item.members:
+                            results.append(subitem._override_name)
+                    elif item._override_name == 'and':
+                        self.assertEqual(len(item), 1)
+                        for subitem in item.members:
+                            results.append(subitem._override_name)
+                    else:
+                        results.append(item._override_name)
+
+        self.assertEqual(sorted(results),
+                         sorted(['ref1', 'ref2', 'ref3', 'ref4']))
