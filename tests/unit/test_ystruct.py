@@ -13,7 +13,7 @@
 # limitations under the License.
 import yaml
 
-from utils import BaseTestCase
+from .utils import BaseTestCase
 
 from ystruct.ystruct import (
     YAMLDefOverrideBase,
