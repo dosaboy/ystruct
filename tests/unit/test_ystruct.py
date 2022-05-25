@@ -53,44 +53,44 @@ class TestYStruct(BaseTestCase):
             root = YAMLDefSection('fruit tastiness', yaml.safe_load(fd.read()),
                                   override_handlers=overrides)
             for leaf in root.leaf_sections:
-                self.assertEquals(leaf.meta.category, 'tastiness')
-                self.assertEquals(leaf.root.name, 'fruit tastiness')
-                self.assertEquals(leaf.input.type, 'dict')
+                self.assertEqual(leaf.meta.category, 'tastiness')
+                self.assertEqual(leaf.root.name, 'fruit tastiness')
+                self.assertEqual(leaf.input.type, 'dict')
                 if leaf.parent.name == 'apples':
                     if leaf.name == 'tasty':
-                        self.assertEquals(str(leaf.message),
-                                          'they make good cider.')
+                        self.assertEqual(str(leaf.message),
+                                         'they make good cider.')
                         self.assertIsNone(leaf.message_alt, None)
-                        self.assertEquals(leaf.input.value,
-                                          {'color': 'red', 'crunchiness': 15})
-                        self.assertEquals(leaf.settings.crunchiness,
-                                          {'operator': 'ge', 'value': 10})
-                        self.assertEquals(leaf.settings.color,
-                                          {'operator': 'eq', 'value': 'red'})
+                        self.assertEqual(leaf.input.value,
+                                         {'color': 'red', 'crunchiness': 15})
+                        self.assertEqual(leaf.settings.crunchiness,
+                                         {'operator': 'ge', 'value': 10})
+                        self.assertEqual(leaf.settings.color,
+                                         {'operator': 'eq', 'value': 'red'})
                     else:
-                        self.assertEquals(str(leaf.message),
-                                          'default message')
+                        self.assertEqual(str(leaf.message),
+                                         'default message')
                         self.assertIsNone(leaf.message_alt, None)
-                        self.assertEquals(leaf.input.value,
-                                          {'color': 'brown', 'crunchiness': 0})
-                        self.assertEquals(leaf.settings.crunchiness,
-                                          {'operator': 'le', 'value': 5})
-                        self.assertEquals(leaf.settings.color,
-                                          {'operator': 'eq', 'value': 'brown'})
+                        self.assertEqual(leaf.input.value,
+                                         {'color': 'brown', 'crunchiness': 0})
+                        self.assertEqual(leaf.settings.crunchiness,
+                                         {'operator': 'le', 'value': 5})
+                        self.assertEqual(leaf.settings.color,
+                                         {'operator': 'eq', 'value': 'brown'})
                 else:
-                    self.assertEquals(str(leaf.message),
-                                      'they make good juice.')
-                    self.assertEquals(str(leaf.message_alt),
-                                      'and good marmalade.')
-                    self.assertEquals(leaf.input.value,
-                                      {'acidity': 2, 'color': 'orange'})
-                    self.assertEquals(leaf.settings.acidity,
-                                      {'operator': 'lt', 'value': 5})
-                    self.assertEquals(leaf.settings.color,
-                                      {'operator': 'eq', 'value': 'red'})
+                    self.assertEqual(str(leaf.message),
+                                     'they make good juice.')
+                    self.assertEqual(str(leaf.message_alt),
+                                     'and good marmalade.')
+                    self.assertEqual(leaf.input.value,
+                                     {'acidity': 2, 'color': 'orange'})
+                    self.assertEqual(leaf.settings.acidity,
+                                     {'operator': 'lt', 'value': 5})
+                    self.assertEqual(leaf.settings.color,
+                                     {'operator': 'eq', 'value': 'red'})
 
     def test_empty_struct(self):
         overrides = [YAMLDefInput, YAMLDefMessage, YAMLDefSettings]
         root = YAMLDefSection('root', {}, override_handlers=overrides)
         for leaf in root.leaf_sections:
-            self.assertEquals(leaf.input.type, 'dict')
+            self.assertEqual(leaf.input.type, 'dict')
