@@ -48,3 +48,11 @@ mycollection:
           cherry: jam
         action:
           lots: more
+    - group:
+        settings:
+          cherry: jam
+        action:
+          lots: more
+        altaction:
+          still: more
+

@@ -65,7 +65,7 @@ class YStructAction(YStructOverrideBase):
 
     @classmethod
     def _override_keys(cls):
-        return ['action']
+        return ['action', 'altaction']
 
 
 class YStructMappedGroupBase(YStructMappedOverrideBase):
@@ -216,7 +216,7 @@ class TestYStruct(utils.BaseTestCase):
                                      {'settings': {'treacle': 'tart'},
                                       'action': {'want': 'more'}})
                 elif leaf.name == 'item5':
-                    self.assertEqual(len(leaf.group), 2)
+                    self.assertEqual(len(leaf.group), 3)
                     checked = 0
                     for i, _group in enumerate(leaf.group):
                         if i == 0:
@@ -228,8 +228,13 @@ class TestYStruct(utils.BaseTestCase):
                             checked += 1
                             self.assertEqual(_group.settings.cherry, 'jam')
                             self.assertEqual(_group.action.lots, 'more')
+                        elif i == 2:
+                            checked += 1
+                            self.assertEqual(_group.settings.cherry, 'jam')
+                            self.assertEqual(_group.action.lots, 'more')
+                            self.assertEqual(_group.altaction.still, 'more')
 
-                    self.assertEqual(checked, 2)
+                    self.assertEqual(checked, 3)
 
     def test_struct_w_metagroup_list(self):
         s1 = {'settings': {'result': True}}

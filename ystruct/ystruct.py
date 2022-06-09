@@ -50,12 +50,12 @@ class OverrideState(object):
 
     def __getattr__(self, name):
         # log("{}.__getattr__: {}".format(self.__class__.__name__, name))
-        name = name.replace('_', '-')
-        if name not in self.content:
+        _name = name.replace('_', '-')
+        if _name not in self.content:
             raise AttributeError("'{}' object has no attribute '{}'".
-                                 format(self, name))
+                                 format(self._whoami, name))
 
-        return self.content[name]
+        return self.content[_name]
 
 
 class OverrideStack(object):
@@ -65,7 +65,7 @@ class OverrideStack(object):
         self.items = []
 
     def add(self, item):
-        log("{}.add: {}".format(self._whoami, item))
+        log("{}.add: {}".format(self._whoami, type(item)))
         self.items.append(item)
         info = "\nsize: {}\ncontents: {}\n".format(len(self), repr(self))
         log("{} stack info: {}".format(self._whoami, info))
@@ -160,7 +160,7 @@ class YStructOverrideBase(OverrideBase):
             return getattr(self._stack.current, name)
 
         raise AttributeError("'{}' object has no attribute '{}'".
-                             format(self, name))
+                             format(self._whoami, name))
 
 
 class YStructOverrideSimpleString(OverrideBase):
@@ -178,7 +178,7 @@ class YStructOverrideSimpleString(OverrideBase):
 
     def __getattr__(self, name):
         raise AttributeError("'{}' object has no attribute '{}'".
-                             format(self, name))
+                             format(self._whoami, name))
 
 
 class MappedOverrideState(object):
@@ -206,7 +206,7 @@ class MappedOverrideState(object):
         return _content
 
     def add_member(self, name, instance):
-        log("{}.add_member: {} {}".format(self._whoami, name, instance))
+        log("{}.add_member: {} {}".format(self._whoami, name, type(instance)))
         if name not in self._member_stacks:
             self._member_stacks[name] = OverrideStack(self)
 
@@ -232,20 +232,20 @@ class MappedOverrideState(object):
 
     def __getattr__(self, name):
         log("{}.__getattr__: {}".format(self._whoami, name))
-        name = name.replace('_', '-')
-        if name in self._member_stacks:
-            member = self._member_stacks[name]
+        _name = name.replace('_', '-')
+        if _name in self._member_stacks:
+            member = self._member_stacks[_name]
             if len(member) > 1:
                 return member
             else:
                 return member.current
 
-        if name in self._member_keys:
+        if _name in self._member_keys:
             # allow members to be empty
             return None
 
         raise AttributeError("'{}' object has no attribute '{}'".
-                             format(self, name))
+                             format(self._whoami, name))
 
 
 class YStructMappedOverrideBase(OverrideBase):
@@ -284,6 +284,14 @@ class YStructMappedOverrideBase(OverrideBase):
             keys += m._override_keys()
 
         return keys
+
+    @property
+    def resolved_member_names(self):
+        names = []
+        for m in self.members:
+            names.append(m._override_name)
+
+        return names
 
     @property
     def members(self):
@@ -353,18 +361,18 @@ class YStructMappedOverrideBase(OverrideBase):
 
     def __getattr__(self, name):
         log("{}.__getattr__: {}".format(self._whoami, name))
-        name = name.replace('_', '-')
+        _name = name.replace('_', '-')
         if len(self._stack):
             members = self._stack.current._member_stacks
-            if name in members:
-                return members[name].current
+            if _name in members:
+                return members[_name].current
 
-        if name in self.member_keys:
+        if _name in self.member_keys:
             # allow members to be empty
             return None
 
         raise AttributeError("'{}' object has no attribute '{}'".
-                             format(self, name))
+                             format(self._whoami, name))
 
 
 class YStructOverrideManager(object):
