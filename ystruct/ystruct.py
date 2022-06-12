@@ -475,6 +475,10 @@ class YStructOverrideManager(object):
             self._resolved_mapped[name] = map_name
 
     @property
+    def resolved_unmapped(self):
+        return self._resolved
+
+    @property
     def resolved(self):
         _r = {}
         _r.update(self._resolved)
@@ -484,7 +488,9 @@ class YStructOverrideManager(object):
 
 class YStructSection(object):
     def __init__(self, name, content, parent=None, root=None,
-                 override_handlers=None, override_manager=None):
+                 override_handlers=None, override_manager=None,
+                 run_hooks=False):
+        self.run_hooks = run_hooks
         if root is None:
             self.root = self
         else:
@@ -534,6 +540,10 @@ class YStructSection(object):
         return self.manager.get_resolved_by_type(otype)
 
     def run(self):
+        if self.root == self and self.run_hooks:
+            log("{}.run: running pre_hook".format(self.__class__.__name__))
+            self.pre_hook()
+
         if type(self.content) == list:
             self.manager.switch_to_stacked()
             for _ref, item in enumerate(self.content):
@@ -560,5 +570,18 @@ class YStructSection(object):
                                    override_manager=self.manager)
                 self.sections.append(s)
 
-        log("{}.__init__: {} END\n".format(self.__class__.__name__,
-                                           self.name))
+        if self.root == self and self.run_hooks:
+            log("{}.run: running post_hook".format(self.__class__.__name__))
+            self.post_hook()
+
+        log("{}.run: {} END\n".format(self.__class__.__name__, self.name))
+
+    def pre_hook(self):
+        """
+        This can be implemented and will be run before parsing begins.
+        """
+
+    def post_hook(self):
+        """
+        This can be implemented and will be run after parsing has completed.
+        """
