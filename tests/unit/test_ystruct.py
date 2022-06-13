@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import yaml
+from unittest import mock
 
 from . import utils
 
@@ -338,3 +339,55 @@ class TestYStruct(utils.BaseTestCase):
 
         self.assertEqual(sorted(results),
                          sorted(['ref1', 'ref2', 'ref3', 'ref4']))
+
+    @mock.patch.object(YStructSection, 'post_hook')
+    @mock.patch.object(YStructSection, 'pre_hook')
+    def test_hooks_called(self, mock_pre_hook, mock_post_hook):
+        content = {'myroot': {
+                       'leaf1': {'settings': {'brake': 'off'}},
+                       'leaf2': {'settings': {'clutch': 'on'}}}}
+
+        YStructSection('hooktest', content,
+                       override_handlers=[YStructMappedGroup],
+                       run_hooks=False)
+        self.assertFalse(mock_pre_hook.called)
+        self.assertFalse(mock_post_hook.called)
+
+        YStructSection('hooktest', content,
+                       override_handlers=[YStructMappedGroup],
+                       run_hooks=True)
+        self.assertTrue(mock_pre_hook.called)
+        self.assertTrue(mock_post_hook.called)
+
+    def test_resolve_paths(self):
+        content = {'myroot': {
+                       'sub1': {
+                           'sub2': {
+                               'leaf1': {'settings': {'brake': 'off'},
+                                         'action': 'go'},
+                               'leaf2': {'settings': {'clutch': 'on'}}}},
+                       'sub3': {
+                               'leaf3': {'settings': {'brake': 'off'}}}}}
+
+        root = YStructSection('resolvtest', content,
+                              override_handlers=[YStructMappedGroup])
+        resolved = []
+        for leaf in root.leaf_sections:
+            resolved.append(leaf.resolve_path)
+            resolved.append(leaf.group._override_path)
+            for setting in leaf.group.members:
+                resolved.append(setting._override_path)
+
+        expected = ['resolvtest.myroot.sub1.sub2.leaf1',
+                    'resolvtest.myroot.sub1.sub2.leaf2',
+                    'resolvtest.myroot.sub3.leaf3',
+                    'resolvtest.myroot.sub1.sub2.leaf1.group.action',
+                    'resolvtest.myroot.sub1.sub2.leaf1.group.settings',
+                    'resolvtest.myroot.sub1.sub2.leaf1.group',
+                    'resolvtest.myroot.sub1.sub2.leaf2.group',
+                    'resolvtest.myroot.sub1.sub2.leaf2.group.settings',
+                    'resolvtest.myroot.sub3.leaf3.group',
+                    'resolvtest.myroot.sub3.leaf3.group.settings']
+
+        self.assertEqual(sorted(resolved),
+                         sorted(expected))
