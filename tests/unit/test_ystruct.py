@@ -391,3 +391,25 @@ class TestYStruct(utils.BaseTestCase):
 
         self.assertEqual(sorted(resolved),
                          sorted(expected))
+
+    def test_context(self):
+        content = {'myroot': {'leaf1': {'settings': {'brake': 'off'}}}}
+
+        class ContextHandler(object):
+            def __init__(self):
+                self.context = {}
+
+            def set(self, key, value):
+                self.context[key] = value
+
+            def get(self, key):
+                return self.context.get(key)
+
+        root = YStructSection('contexttest', content,
+                              override_handlers=[YStructMappedGroup],
+                              context=ContextHandler())
+        for leaf in root.leaf_sections:
+            for setting in leaf.group.members:
+                self.assertIsNone(setting.context.get('k1'))
+                setting.context.set('k1', 'notk2')
+                self.assertEqual(setting.context.get('k1'), 'notk2')
