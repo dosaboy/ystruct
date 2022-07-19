@@ -207,3 +207,49 @@ class TestYStructMappedProperties(utils.BaseTestCase):
                                          'it also failed')
 
         self.assertEqual(checked, ['assertions', 'assertion', 'key1', 'key2'])
+
+    def test_mapping_list_members_full_w_lopt(self):
+        """
+        A list of properties grouped by a logical operator.
+        """
+        content = {'assertions': {'and': [{'key': 'key1',
+                                           'value1': 1,
+                                           'value2': 2,
+                                           'ops': ['gt'],
+                                           'message': 'it failed'},
+                                          {'key': 'key2',
+                                           'value1': 3,
+                                           'ops': ['lt'],
+                                           'value2': 4,
+                                           'message': 'it also failed'}]}}
+
+        root = YStructSection('mappingtest', content,
+                              override_handlers=[YStructAssertions])
+        checked = []
+        for leaf in root.leaf_sections:
+            checked.append(leaf.assertions._override_name)
+            for groups in leaf.assertions.members:
+                self.assertEqual(len(groups), 1)
+                checked.append(groups._override_name)
+                self.assertEqual(groups._override_name, 'and')
+                for assertion in groups.members:
+                    self.assertEqual(len(assertion), 2)
+                    checked.append(assertion._override_name)
+                    for attrs in assertion:
+                        checked.append(attrs.key)
+                        if attrs.key == 'key1':
+                            self.assertEqual(attrs.key, 'key1')
+                            self.assertEqual(attrs.value1, 1)
+                            self.assertEqual(attrs.value2, 2)
+                            self.assertEqual(attrs.ops, ['gt'])
+                            self.assertEqual(attrs.message, 'it failed')
+                        else:
+                            self.assertEqual(attrs.key, 'key2')
+                            self.assertEqual(attrs.value1, 3)
+                            self.assertEqual(attrs.value2, 4)
+                            self.assertEqual(attrs.ops, ['lt'])
+                            self.assertEqual(attrs.message,
+                                             'it also failed')
+
+        self.assertEqual(checked, ['assertions', 'and', 'assertion', 'key1',
+                                   'key2'])
