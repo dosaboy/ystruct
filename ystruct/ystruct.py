@@ -553,7 +553,10 @@ class YStructSection(object):
         self.parent = parent
         self.content = content
         self.sections = []
-        self.resolve_path = resolve_path
+        if resolve_path:
+            self.resolve_path = resolve_path
+        else:
+            self.resolve_path = name
 
         if override_manager:
             self.manager = YStructOverrideManager(manager=override_manager)
@@ -622,11 +625,7 @@ class YStructSection(object):
                 if name in self.manager.resolved:
                     continue
 
-                if self.resolve_path is None:
-                    rpath = "{}.{}".format(self.name, name)
-                else:
-                    rpath = "{}.{}".format(self.resolve_path, name)
-
+                rpath = "{}.{}".format(self.resolve_path, name)
                 s = YStructSection(name, content, parent=self, root=self.root,
                                    override_manager=self.manager,
                                    resolve_path=rpath)
