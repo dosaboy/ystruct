@@ -19,7 +19,7 @@ from . import utils
 from ystruct.ystruct import (
     YStructOverrideBase,
     YStructMappedOverrideBase,
-    YStructSection
+    YStructSection,
 )
 
 
@@ -67,6 +67,13 @@ class YStructAction(YStructOverrideBase):
     @classmethod
     def _override_keys(cls):
         return ['action', 'altaction']
+
+
+class YStructRaws(YStructOverrideBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['raws']
 
 
 class YStructMappedGroupBase(YStructMappedOverrideBase):
@@ -413,3 +420,16 @@ class TestYStruct(utils.BaseTestCase):
                 self.assertIsNone(setting.context.get('k1'))
                 setting.context.set('k1', 'notk2')
                 self.assertEqual(setting.context.get('k1'), 'notk2')
+
+    def test_raw_types(self):
+        content = {'raws': {'red': 'meat',
+                            'bits': 8,
+                            'bytes': 1,
+                            'stringbits': '8'}}
+        root = YStructSection('rawtest', content,
+                              override_handlers=[YStructRaws])
+        for leaf in root.leaf_sections:
+            self.assertEqual(leaf.raws.red, 'meat')
+            self.assertEqual(leaf.raws.bytes, 1)
+            self.assertEqual(leaf.raws.bits, 8)
+            self.assertEqual(leaf.raws.stringbits, '8')
