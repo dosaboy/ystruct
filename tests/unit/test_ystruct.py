@@ -200,6 +200,8 @@ class TestYStruct(utils.BaseTestCase):
                 self.assertTrue(leaf.name in ['item1', 'item2', 'item3',
                                               'item4', 'item5'])
                 if leaf.name == 'item1':
+                    self.assertEqual(type(leaf.group), YStructMappedGroup)
+                    self.assertEqual(len(leaf.group), 1)
                     self.assertEqual(leaf.group.settings.plum, 'pie')
                     self.assertEqual(leaf.group.action.eat, 'now')
                     self.assertEqual(leaf.group.all,
@@ -245,12 +247,15 @@ class TestYStruct(utils.BaseTestCase):
                     self.assertEqual(checked, 3)
 
     def test_struct_w_metagroup_list(self):
-        s1 = {'settings': {'result': True}}
-        s2 = {'settings': {'result': False}}
-
-        content = {'item1': {'group': [s1, s2]}}
-
-        root = YStructSection('mgtest', content,
+        _yaml = """
+        item1:
+          group:
+            - settings:
+                result: true
+            - settings:
+                result: false
+        """
+        root = YStructSection('mgtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
@@ -260,12 +265,16 @@ class TestYStruct(utils.BaseTestCase):
         self.assertEqual(results, [True, False])
 
     def test_struct_w_metagroup_w_logical_opt(self):
-        s1 = {'settings': {'result': True}}
-        s2 = {'settings': {'result': False}}
-
-        content = {'item1': {'group': {'and': [s1, s2]}}}
-
-        root = YStructSection('mgtest', content,
+        _yaml = """
+        item1:
+          group:
+            and:
+              - settings:
+                  result: true
+              - settings:
+                  result: false
+        """
+        root = YStructSection('mgtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
@@ -275,14 +284,19 @@ class TestYStruct(utils.BaseTestCase):
         self.assertEqual(results, [True, False])
 
     def test_struct_w_metagroup_w_multiple_logical_opts(self):
-        s1 = {'settings': {'result': True}}
-        s2 = {'settings': {'result': False}}
-        s3 = {'settings': {'result': False}}
-
-        content = {'item1': {'group': {'or': [s1, s2],
-                                       'and': s3}}}
-
-        root = YStructSection('mgtest', content,
+        _yaml = """
+        item1:
+          group:
+            or:
+              - settings:
+                  result: true
+              - settings:
+                  result: false
+            and:
+              settings:
+                result: false
+        """
+        root = YStructSection('mgtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
@@ -295,12 +309,16 @@ class TestYStruct(utils.BaseTestCase):
         self.assertEqual(results, [True, False])
 
     def test_struct_w_metagroup_w_mixed_list(self):
-        s1 = {'settings': {'result': True}}
-        s2 = {'settings': {'result': False}}
-
-        content = {'item1': {'group': [{'or': s1}, s2]}}
-
-        root = YStructSection('mgtest', content,
+        _yaml = """
+        item1:
+          group:
+            - or:
+                settings:
+                  result: true
+            - settings:
+                result: false
+        """
+        root = YStructSection('mgtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
@@ -320,16 +338,19 @@ class TestYStruct(utils.BaseTestCase):
         self.assertEqual(sorted(results), sorted([True, False]))
 
     def test_struct_w_metagroup_w_mixed_list_w_str_overrides(self):
-        content = {'item1': {'refs': [{'or': 'ref1',
-                                       'and': ['ref2', 'ref3']}, 'ref4']}}
-
-        root = YStructSection('mgtest', content,
+        _yaml = """
+        item1:
+          refs:
+            - or: ref1
+              and: [ref2, ref3]
+            - ref4
+        """
+        root = YStructSection('mgtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedRefs])
         results = []
         for leaf in root.leaf_sections:
             self.assertEqual(leaf.name, 'item1')
             for refs in leaf.refs:
-                self.assertEqual(refs.name, 'refs')
                 for item in refs:
                     self.assertTrue(item._override_name in ['and', 'or',
                                                             'ref4'])
@@ -350,33 +371,45 @@ class TestYStruct(utils.BaseTestCase):
     @mock.patch.object(YStructSection, 'post_hook')
     @mock.patch.object(YStructSection, 'pre_hook')
     def test_hooks_called(self, mock_pre_hook, mock_post_hook):
-        content = {'myroot': {
-                       'leaf1': {'settings': {'brake': 'off'}},
-                       'leaf2': {'settings': {'clutch': 'on'}}}}
-
-        YStructSection('hooktest', content,
+        _yaml = """
+        myroot:
+          leaf1:
+            settings:
+              brake: off
+          leaf2:
+            settings:
+              clutch: on
+        """
+        YStructSection('hooktest', yaml.safe_load(_yaml),
                        override_handlers=[YStructMappedGroup],
                        run_hooks=False)
         self.assertFalse(mock_pre_hook.called)
         self.assertFalse(mock_post_hook.called)
 
-        YStructSection('hooktest', content,
+        YStructSection('hooktest', yaml.safe_load(_yaml),
                        override_handlers=[YStructMappedGroup],
                        run_hooks=True)
         self.assertTrue(mock_pre_hook.called)
         self.assertTrue(mock_post_hook.called)
 
     def test_resolve_paths(self):
-        content = {'myroot': {
-                       'sub1': {
-                           'sub2': {
-                               'leaf1': {'settings': {'brake': 'off'},
-                                         'action': 'go'},
-                               'leaf2': {'settings': {'clutch': 'on'}}}},
-                       'sub3': {
-                               'leaf3': {'settings': {'brake': 'off'}}}}}
-
-        root = YStructSection('resolvtest', content,
+        _yaml = """
+        myroot:
+          sub1:
+            sub2:
+              leaf1:
+                settings:
+                  brake: off
+                action: go
+              leaf2:
+                settings:
+                  clutch: on
+          sub3:
+            leaf3:
+              settings:
+                clutch: on
+        """
+        root = YStructSection('resolvtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedGroup])
         resolved = []
         for leaf in root.leaf_sections:
@@ -386,21 +419,25 @@ class TestYStruct(utils.BaseTestCase):
                 resolved.append(setting._override_path)
 
         expected = ['resolvtest.myroot.sub1.sub2.leaf1',
-                    'resolvtest.myroot.sub1.sub2.leaf2',
-                    'resolvtest.myroot.sub3.leaf3',
-                    'resolvtest.myroot.sub1.sub2.leaf1.group.action',
-                    'resolvtest.myroot.sub1.sub2.leaf1.group.settings',
                     'resolvtest.myroot.sub1.sub2.leaf1.group',
+                    'resolvtest.myroot.sub1.sub2.leaf1.group.settings',
+                    'resolvtest.myroot.sub1.sub2.leaf1.group.action',
+                    'resolvtest.myroot.sub1.sub2.leaf2',
                     'resolvtest.myroot.sub1.sub2.leaf2.group',
                     'resolvtest.myroot.sub1.sub2.leaf2.group.settings',
+                    'resolvtest.myroot.sub3.leaf3',
                     'resolvtest.myroot.sub3.leaf3.group',
                     'resolvtest.myroot.sub3.leaf3.group.settings']
 
-        self.assertEqual(sorted(resolved),
-                         sorted(expected))
+        self.assertEqual(resolved, expected)
 
     def test_context(self):
-        content = {'myroot': {'leaf1': {'settings': {'brake': 'off'}}}}
+        _yaml = """
+        myroot:
+          leaf1:
+            settings:
+              brake: off
+        """
 
         class ContextHandler(object):
             def __init__(self):
@@ -412,7 +449,7 @@ class TestYStruct(utils.BaseTestCase):
             def get(self, key):
                 return self.context.get(key)
 
-        root = YStructSection('contexttest', content,
+        root = YStructSection('contexttest', yaml.safe_load(_yaml),
                               override_handlers=[YStructMappedGroup],
                               context=ContextHandler())
         for leaf in root.leaf_sections:
@@ -422,11 +459,14 @@ class TestYStruct(utils.BaseTestCase):
                 self.assertEqual(setting.context.get('k1'), 'notk2')
 
     def test_raw_types(self):
-        content = {'raws': {'red': 'meat',
-                            'bits': 8,
-                            'bytes': 1,
-                            'stringbits': '8'}}
-        root = YStructSection('rawtest', content,
+        _yaml = """
+        raws:
+          red: meat
+          bits: 8
+          bytes: 1
+          stringbits: '8'
+        """
+        root = YStructSection('rawtest', yaml.safe_load(_yaml),
                               override_handlers=[YStructRaws])
         for leaf in root.leaf_sections:
             self.assertEqual(leaf.raws.red, 'meat')
