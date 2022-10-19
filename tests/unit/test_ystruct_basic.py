@@ -20,6 +20,8 @@ from . import utils
 from ystruct.ystruct import (
     YStructOverrideBase,
     YStructMappedOverrideBase,
+    YStructOverrideRawType,
+    MappedOverrideState,
     YStructSection,
 )
 
@@ -50,7 +52,7 @@ class YStructPropGroup(YStructMappedOverrideBase):
 
     @classmethod
     def _override_mapped_member_types(cls):
-        return [YStructStrProp, YStructDictProp]
+        return [YStructStrProp, YStructDictProp, YStructOverrideRawType]
 
 
 class TestYStructSimpleProps(utils.BaseTestCase):
@@ -113,9 +115,36 @@ class TestYStructMappedProps(utils.BaseTestCase):
         for leaf in root.leaf_sections:
             self.assertEqual(type(leaf.pgroup), YStructPropGroup)
             self.assertEqual(len(leaf.pgroup), 1)
-            for member in leaf.pgroup:
-                self.assertEqual(type(member.strprop), str)
-                self.assertEqual(member.strprop, "myval")
+            for pgroup in leaf.pgroup:
+                self.assertEqual(len(pgroup), 1)
+                self.assertEqual(type(pgroup.strprop), str)
+                self.assertEqual(pgroup.strprop, "myval")
+
+    def test_struct_mapped_prop_single_list(self):
+        overrides = [YStructPropGroup]
+        _yaml = """
+        pgroup:
+          - '1'
+          - '2'
+          - '3'
+        """
+        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+                              override_handlers=overrides)
+        vals = []
+        for leaf in root.leaf_sections:
+            self.assertEqual(type(leaf.pgroup), YStructPropGroup)
+            self.assertEqual(len(leaf.pgroup), 1)
+            for pgroup in leaf.pgroup:
+                self.assertEqual(type(pgroup), MappedOverrideState)
+                members = 0
+                self.assertEqual(len(pgroup), 3)
+                for member in pgroup:
+                    self.assertEqual(type(member), YStructOverrideRawType)
+                    members += 1
+                    vals.append(str(member))
+
+        self.assertEqual(members, 3)
+        self.assertEqual(vals, ['1', '2', '3'])
 
     def test_struct_mapped_prop_multi_list(self):
         overrides = [YStructPropGroup]

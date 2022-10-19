@@ -18,6 +18,8 @@ from . import utils
 from ystruct.ystruct import (
     YStructOverrideBase,
     YStructMappedOverrideBase,
+    YStructOverrideRawType,
+    MappedOverrideState,
     YStructSection
 )
 
@@ -68,6 +70,32 @@ class YStructAssertions(YStructAssertionsBase):
     def _override_mapped_member_types(cls):
         return super()._override_mapped_member_types() + \
                     [YStructAssertionsLogicalOpt]
+
+
+class YStructStrGroupBase(YStructMappedOverrideBase):
+
+    @classmethod
+    def _override_mapped_member_types(cls):
+        return [YStructOverrideRawType]
+
+
+class YStructStrGroupLogicalOpt(YStructStrGroupBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['and', 'or', 'not']
+
+
+class YStructStrGroups(YStructStrGroupBase):
+
+    @classmethod
+    def _override_keys(cls):
+        return ['strgroups']
+
+    @classmethod
+    def _override_mapped_member_types(cls):
+        return super()._override_mapped_member_types() + \
+                    [YStructStrGroupLogicalOpt]
 
 
 class TestYStructMappedProperties(utils.BaseTestCase):
@@ -276,6 +304,43 @@ class TestYStructMappedProperties(utils.BaseTestCase):
 
         self.assertEqual(checked, ['assertions', 'and', 'assertion', 'key1',
                                    'key2'])
+
+    def test_mapping_list_members_simple_w_lopt(self):
+        """
+        A list of properties grouped by a logical operator.
+        """
+
+        _yaml = """
+        strgroups:
+          and:
+            - a
+            - b
+            - c
+        """
+        root = YStructSection('mappingtest', yaml.safe_load(_yaml),
+                              override_handlers=[YStructStrGroups])
+        vals = []
+        ops_items = 0
+        ops_members = 0
+        for leaf in root.leaf_sections:
+            self.assertEqual(type(leaf.strgroups), YStructStrGroups)
+            for groups in leaf.strgroups:
+                self.assertEqual(type(groups), MappedOverrideState)
+                for member in groups:
+                    self.assertEqual(type(member), YStructStrGroupLogicalOpt)
+                    self.assertEqual(len(member), 1)
+                    for item in member:
+                        ops_members += 1
+                        self.assertEqual(type(item), MappedOverrideState)
+                        self.assertEqual(len(item), 3)
+                        for x in item:
+                            ops_items += 1
+                            self.assertEqual(type(x), YStructOverrideRawType)
+                            vals.append(str(x))
+
+        self.assertEqual(ops_members, 1)
+        self.assertEqual(ops_items, 3)
+        self.assertEqual(vals, ['a', 'b', 'c'])
 
     def process_optgroup(self, assertiongroup, opname):
         """
