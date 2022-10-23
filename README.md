@@ -1,3 +1,10 @@
-Library to help create meaningful yaml structures.
+# Structr
 
-YAML provides a nice way to structure information. If your use-case requires that structure to map to a code implementation you may find this library helpful.
+Library to help create meaningful structures from yaml or json.
+
+YAML and JSON provide a nice way to define a structure and this library provides
+a way to give meaning to that structure so that it can be used in code. Once
+yaml or json is loaded into Python we can then "walk the tree" until we find
+items that we recognise. This library supports different types of "overrides"
+that are essentially a dictionary with a unique root key and content that can
+be extracted as properties on a class.

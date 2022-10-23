@@ -12,29 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import yaml
+
 from unittest import mock
 
 from . import utils
 
-from ystruct.ystruct import (
-    YStructOverrideBase,
-    YStructMappedOverrideBase,
-    YStructSection,
+from structr import (
+    StructROverrideBase,
+    StructRMappedOverrideBase,
+    StructRSection,
 )
 
 
-class YStructCustomOverrideBase(YStructOverrideBase):
+class StructRCustomOverrideBase(StructROverrideBase):
     pass
 
 
-class YStructInput(YStructCustomOverrideBase):
+class StructRInput(StructRCustomOverrideBase):
 
     @classmethod
     def _override_keys(cls):
         return ['input']
 
 
-class YStructMessage(YStructOverrideBase):
+class StructRMessage(StructROverrideBase):
 
     @classmethod
     def _override_keys(cls):
@@ -44,14 +45,14 @@ class YStructMessage(YStructOverrideBase):
         return self.content
 
 
-class YStructMeta(YStructOverrideBase):
+class StructRMeta(StructROverrideBase):
 
     @classmethod
     def _override_keys(cls):
         return ['meta']
 
 
-class YStructSettings(YStructOverrideBase):
+class StructRSettings(StructROverrideBase):
 
     @classmethod
     def _override_keys(cls):
@@ -62,25 +63,25 @@ class YStructSettings(YStructOverrideBase):
         return "i am a property"
 
 
-class YStructAction(YStructOverrideBase):
+class StructRAction(StructROverrideBase):
 
     @classmethod
     def _override_keys(cls):
         return ['action', 'altaction']
 
 
-class YStructRaws(YStructOverrideBase):
+class StructRRaws(StructROverrideBase):
 
     @classmethod
     def _override_keys(cls):
         return ['raws']
 
 
-class YStructMappedGroupBase(YStructMappedOverrideBase):
+class StructRMappedGroupBase(StructRMappedOverrideBase):
 
     @classmethod
     def _override_mapped_member_types(cls):
-        return [YStructSettings, YStructAction]
+        return [StructRSettings, StructRAction]
 
     @property
     def all(self):
@@ -94,14 +95,14 @@ class YStructMappedGroupBase(YStructMappedOverrideBase):
         return _all
 
 
-class YStructMappedGroupLogicalOpt(YStructMappedGroupBase):
+class StructRMappedGroupLogicalOpt(StructRMappedGroupBase):
 
     @classmethod
     def _override_keys(cls):
         return ['and', 'or', 'not']
 
 
-class YStructMappedGroup(YStructMappedGroupBase):
+class StructRMappedGroup(StructRMappedGroupBase):
 
     @classmethod
     def _override_keys(cls):
@@ -110,10 +111,10 @@ class YStructMappedGroup(YStructMappedGroupBase):
     @classmethod
     def _override_mapped_member_types(cls):
         return super()._override_mapped_member_types() + \
-                    [YStructMappedGroupLogicalOpt]
+                    [StructRMappedGroupLogicalOpt]
 
 
-class YStructMappedRefsBase(YStructMappedOverrideBase):
+class StructRMappedRefsBase(StructRMappedOverrideBase):
 
     @classmethod
     def _override_mapped_member_types(cls):
@@ -121,14 +122,14 @@ class YStructMappedRefsBase(YStructMappedOverrideBase):
         return []
 
 
-class YStructMappedRefsLogicalOpt(YStructMappedRefsBase):
+class StructRMappedRefsLogicalOpt(StructRMappedRefsBase):
 
     @classmethod
     def _override_keys(cls):
         return ['and', 'or', 'not']
 
 
-class YStructMappedRefs(YStructMappedRefsBase):
+class StructRMappedRefs(StructRMappedRefsBase):
 
     @classmethod
     def _override_keys(cls):
@@ -137,16 +138,16 @@ class YStructMappedRefs(YStructMappedRefsBase):
     @classmethod
     def _override_mapped_member_types(cls):
         return super()._override_mapped_member_types() + \
-                    [YStructMappedRefsLogicalOpt]
+                    [StructRMappedRefsLogicalOpt]
 
 
-class TestYStruct(utils.BaseTestCase):
+class TestStructR(utils.BaseTestCase):
 
     def test_struct(self):
-        overrides = [YStructInput, YStructMessage, YStructSettings,
-                     YStructMeta]
+        overrides = [StructRInput, StructRMessage, StructRSettings,
+                     StructRMeta]
         with open('examples/checks.yaml') as fd:
-            root = YStructSection('fruit tastiness', yaml.safe_load(fd.read()),
+            root = StructRSection('fruit tastiness', yaml.safe_load(fd.read()),
                                   override_handlers=overrides)
             for leaf in root.leaf_sections:
                 self.assertEqual(leaf.meta.category, 'tastiness')
@@ -186,21 +187,21 @@ class TestYStruct(utils.BaseTestCase):
                                      {'operator': 'eq', 'value': 'red'})
 
     def test_empty_struct(self):
-        overrides = [YStructInput, YStructMessage, YStructSettings]
-        root = YStructSection('root', content={}, override_handlers=overrides)
+        overrides = [StructRInput, StructRMessage, StructRSettings]
+        root = StructRSection('root', content={}, override_handlers=overrides)
         for leaf in root.leaf_sections:
             self.assertEqual(leaf.input.type, 'dict')
 
     def test_struct_w_mapping(self):
         with open('examples/checks2.yaml') as fd:
-            root = YStructSection('atest', yaml.safe_load(fd.read()),
-                                  override_handlers=[YStructMessage,
-                                                     YStructMappedGroup])
+            root = StructRSection('atest', yaml.safe_load(fd.read()),
+                                  override_handlers=[StructRMessage,
+                                                     StructRMappedGroup])
             for leaf in root.leaf_sections:
                 self.assertTrue(leaf.name in ['item1', 'item2', 'item3',
                                               'item4', 'item5'])
                 if leaf.name == 'item1':
-                    self.assertEqual(type(leaf.group), YStructMappedGroup)
+                    self.assertEqual(type(leaf.group), StructRMappedGroup)
                     self.assertEqual(len(leaf.group), 1)
                     self.assertEqual(leaf.group.settings.plum, 'pie')
                     self.assertEqual(leaf.group.action.eat, 'now')
@@ -255,8 +256,8 @@ class TestYStruct(utils.BaseTestCase):
             - settings:
                 result: false
         """
-        root = YStructSection('mgtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedGroup])
+        root = StructRSection('mgtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
             self.assertEqual(len(leaf.group.settings), 2)
@@ -274,8 +275,8 @@ class TestYStruct(utils.BaseTestCase):
               - settings:
                   result: false
         """
-        root = YStructSection('mgtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedGroup])
+        root = StructRSection('mgtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
             self.assertEqual(len(getattr(leaf.group, 'and').settings), 2)
@@ -296,8 +297,8 @@ class TestYStruct(utils.BaseTestCase):
               settings:
                 result: false
         """
-        root = YStructSection('mgtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedGroup])
+        root = StructRSection('mgtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
             self.assertEqual(len(getattr(leaf.group, 'and').settings), 1)
@@ -318,8 +319,8 @@ class TestYStruct(utils.BaseTestCase):
             - settings:
                 result: false
         """
-        root = YStructSection('mgtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedGroup])
+        root = StructRSection('mgtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedGroup])
         for leaf in root.leaf_sections:
             self.assertEqual(len(leaf.group), 1)
             self.assertEqual(len(getattr(leaf.group, 'or').settings), 1)
@@ -345,8 +346,8 @@ class TestYStruct(utils.BaseTestCase):
               and: [ref2, ref3]
             - ref4
         """
-        root = YStructSection('mgtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedRefs])
+        root = StructRSection('mgtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedRefs])
         results = []
         for leaf in root.leaf_sections:
             self.assertEqual(leaf.name, 'item1')
@@ -368,8 +369,8 @@ class TestYStruct(utils.BaseTestCase):
         self.assertEqual(sorted(results),
                          sorted(['ref1', 'ref2', 'ref3', 'ref4']))
 
-    @mock.patch.object(YStructSection, 'post_hook')
-    @mock.patch.object(YStructSection, 'pre_hook')
+    @mock.patch.object(StructRSection, 'post_hook')
+    @mock.patch.object(StructRSection, 'pre_hook')
     def test_hooks_called(self, mock_pre_hook, mock_post_hook):
         _yaml = """
         myroot:
@@ -380,14 +381,14 @@ class TestYStruct(utils.BaseTestCase):
             settings:
               clutch: on
         """
-        YStructSection('hooktest', yaml.safe_load(_yaml),
-                       override_handlers=[YStructMappedGroup],
+        StructRSection('hooktest', yaml.safe_load(_yaml),
+                       override_handlers=[StructRMappedGroup],
                        run_hooks=False)
         self.assertFalse(mock_pre_hook.called)
         self.assertFalse(mock_post_hook.called)
 
-        YStructSection('hooktest', yaml.safe_load(_yaml),
-                       override_handlers=[YStructMappedGroup],
+        StructRSection('hooktest', yaml.safe_load(_yaml),
+                       override_handlers=[StructRMappedGroup],
                        run_hooks=True)
         self.assertTrue(mock_pre_hook.called)
         self.assertTrue(mock_post_hook.called)
@@ -409,8 +410,8 @@ class TestYStruct(utils.BaseTestCase):
               settings:
                 clutch: on
         """
-        root = YStructSection('resolvtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedGroup])
+        root = StructRSection('resolvtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedGroup])
         resolved = []
         for leaf in root.leaf_sections:
             resolved.append(leaf.resolve_path)
@@ -449,8 +450,8 @@ class TestYStruct(utils.BaseTestCase):
             def get(self, key):
                 return self.context.get(key)
 
-        root = YStructSection('contexttest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructMappedGroup],
+        root = StructRSection('contexttest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRMappedGroup],
                               context=ContextHandler())
         for leaf in root.leaf_sections:
             for setting in leaf.group.members:
@@ -466,8 +467,8 @@ class TestYStruct(utils.BaseTestCase):
           bytes: 1
           stringbits: '8'
         """
-        root = YStructSection('rawtest', yaml.safe_load(_yaml),
-                              override_handlers=[YStructRaws])
+        root = StructRSection('rawtest', yaml.safe_load(_yaml),
+                              override_handlers=[StructRRaws])
         for leaf in root.leaf_sections:
             self.assertEqual(leaf.raws.red, 'meat')
             self.assertEqual(leaf.raws.bytes, 1)

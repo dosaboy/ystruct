@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import abc
 import os
 import sys
@@ -26,7 +25,7 @@ def log(msg):
         sys.stderr.write("DEBUG: {}\n".format(msg))
 
 
-class YStructException(Exception):
+class StructRException(Exception):
     pass
 
 
@@ -170,7 +169,7 @@ class OverrideBase(abc.ABC):
         """ Each implementation must have their own means of lookups. """
 
 
-class YStructOverrideBase(OverrideBase):
+class StructROverrideBase(OverrideBase):
 
     def __getattr__(self, name):
         log("{}.__getattr__: unmapped name={}".format(self._whoami, name))
@@ -182,7 +181,7 @@ class YStructOverrideBase(OverrideBase):
                              format(self._whoami, name))
 
 
-class YStructOverrideRawType(OverrideBase):
+class StructROverrideRawType(OverrideBase):
 
     @classmethod
     def _override_keys(cls):
@@ -316,7 +315,7 @@ class MappedOverrideState(object):
                              format(self._whoami, name))
 
 
-class YStructMappedOverrideBase(OverrideBase):
+class StructRMappedOverrideBase(OverrideBase):
 
     def __init__(self, name, content, *args, **kwargs):
         log("creating new mapped override id={} type={} name={}".
@@ -421,7 +420,7 @@ class YStructMappedOverrideBase(OverrideBase):
                     format(self._override_name))
                 mapping_members = self._override_mapped_member_types()
                 mapping_members.append(self.__class__)
-                s = YStructSection(name, content,
+                s = StructRSection(name, content,
                                    resolve_path=self._override_path,
                                    override_handlers=mapping_members,
                                    context=self._context)
@@ -451,19 +450,19 @@ class YStructMappedOverrideBase(OverrideBase):
                             format(key))
                         state.add_obj(obj)
 
-                for obj in s.get_resolved_by_type(YStructOverrideRawType):
+                for obj in s.get_resolved_by_type(StructROverrideRawType):
                     state.add_obj(obj)
             else:
                 log("content type '{}' not parsable ({}) so "
                     "treating as {}".format(type(content),
                                             self.valid_parse_content_types(),
-                                            YStructOverrideRawType.__name__)),
+                                            StructROverrideRawType.__name__)),
 
                 if type(content) != list:
                     content = [content]
 
                 for item in content:
-                    obj = YStructOverrideRawType(item, item, self.context,
+                    obj = StructROverrideRawType(item, item, self.context,
                                                  self._override_path)
                     state.add_obj(obj)
 
@@ -500,14 +499,14 @@ class YStructMappedOverrideBase(OverrideBase):
                              format(self._whoami, name))
 
 
-class YStructOverrideManager(object):
+class StructROverrideManager(object):
 
     def __init__(self, handlers=None, manager=None, context=None):
         self.allow_stacking = False
         self._resolved = {}
         self._resolved_mapped = {}
         if not handlers:
-            handlers = [YStructOverrideRawType]
+            handlers = [StructROverrideRawType]
 
         if manager:
             # clone it
@@ -520,7 +519,7 @@ class YStructOverrideManager(object):
             self._handlers = []
             self._mappings = []
             for h in handlers:
-                if issubclass(h, YStructMappedOverrideBase):
+                if issubclass(h, StructRMappedOverrideBase):
                     self._mappings.append(h)
                 else:
                     self._handlers.append(h)
@@ -592,10 +591,10 @@ class YStructOverrideManager(object):
                 add_member = True
 
         if resolved_obj and (self.allow_stacking or add_member):
-            if isinstance(resolved_obj, YStructMappedOverrideBase):
+            if isinstance(resolved_obj, StructRMappedOverrideBase):
                 log("{} is an instance of {}".
                     format(resolved_obj.__class__.__name__,
-                           YStructMappedOverrideBase.__name__))
+                           StructRMappedOverrideBase.__name__))
                 resolved_obj.add_state(name, content,
                                        flush_current=flush_mapped)
             else:
@@ -603,7 +602,7 @@ class YStructOverrideManager(object):
                     "therefore assumed to "
                     "be a member or unmapped override".
                     format(id(resolved_obj), resolved_obj.__class__.__name__,
-                           YStructMappedOverrideBase.__name__))
+                           StructRMappedOverrideBase.__name__))
                 resolved_obj.add_state(name, content)
         else:
             obj = handler(name, content, self._context, resolve_path)
@@ -615,7 +614,7 @@ class YStructOverrideManager(object):
                    flush_mapped))
         if name == content:
             log("resolved principle override with raw content")
-            self.add_resolved(name, content, YStructOverrideRawType,
+            self.add_resolved(name, content, StructROverrideRawType,
                               resolve_path)
             return
 
@@ -659,7 +658,7 @@ class YStructOverrideManager(object):
         return _r
 
 
-class YStructSection(object):
+class StructRSection(object):
     def __init__(self, name, content, parent=None, root=None,
                  override_handlers=None, override_manager=None,
                  run_hooks=False, resolve_path=None, context=None):
@@ -681,9 +680,9 @@ class YStructSection(object):
             self.resolve_path = name
 
         if override_manager:
-            self.manager = YStructOverrideManager(manager=override_manager)
+            self.manager = StructROverrideManager(manager=override_manager)
         else:
-            self.manager = YStructOverrideManager(handlers=override_handlers,
+            self.manager = StructROverrideManager(handlers=override_handlers,
                                                   context=context)
 
         self.run()
@@ -727,7 +726,7 @@ class YStructSection(object):
             self.manager.switch_to_stacked()
             for _ref, item in enumerate(self.content):
                 log("{}.run: item={}".format(self.__class__.__name__, item))
-                if YStructOverrideRawType.check_is_raw_value(item):
+                if StructROverrideRawType.check_is_raw_value(item):
                     self.manager.resolve(item, item, self.resolve_path)
                 else:
                     flush_mapped = True
@@ -738,7 +737,7 @@ class YStructSection(object):
         else:
             self.manager.allow_stacking = False
             if type(self.content) != dict:
-                raise YStructException("undefined override '{}'".
+                raise StructRException("undefined override '{}'".
                                        format(self.name))
 
             log("content is dict")
@@ -750,14 +749,14 @@ class YStructSection(object):
                     unresolved[name] = content
 
             for name, content in unresolved.items():
-                if YStructOverrideRawType.check_is_raw_value(content):
+                if StructROverrideRawType.check_is_raw_value(content):
                     log("{}.run: terminating override={} with raw content "
                         "'{}'".
                         format(self.__class__.__name__, name, content))
                     continue
 
                 rpath = "{}.{}".format(self.resolve_path, name)
-                s = YStructSection(name, content, parent=self, root=self.root,
+                s = StructRSection(name, content, parent=self, root=self.root,
                                    override_manager=self.manager,
                                    resolve_path=rpath)
                 self.sections.append(s)

@@ -17,16 +17,16 @@ from collections import UserString
 
 from . import utils
 
-from ystruct.ystruct import (
-    YStructOverrideBase,
-    YStructMappedOverrideBase,
-    YStructOverrideRawType,
-    MappedOverrideState,
-    YStructSection,
+from structr import (
+    StructROverrideBase,
+    StructRMappedOverrideBase,
+    StructROverrideRawType,
+    StructRSection,
 )
+from structr.structr import MappedOverrideState
 
 
-class YStructStrProp(YStructOverrideBase, UserString):
+class StructRStrProp(StructROverrideBase, UserString):
 
     @classmethod
     def _override_keys(cls):
@@ -37,14 +37,14 @@ class YStructStrProp(YStructOverrideBase, UserString):
         return self.content
 
 
-class YStructDictProp(YStructOverrideBase):
+class StructRDictProp(StructROverrideBase):
 
     @classmethod
     def _override_keys(cls):
         return ['dictprop']
 
 
-class YStructPropGroup(YStructMappedOverrideBase):
+class StructRPropGroup(StructRMappedOverrideBase):
 
     @classmethod
     def _override_keys(cls):
@@ -52,68 +52,68 @@ class YStructPropGroup(YStructMappedOverrideBase):
 
     @classmethod
     def _override_mapped_member_types(cls):
-        return [YStructStrProp, YStructDictProp, YStructOverrideRawType]
+        return [StructRStrProp, StructRDictProp, StructROverrideRawType]
 
 
-class TestYStructSimpleProps(utils.BaseTestCase):
+class TestStructRSimpleProps(utils.BaseTestCase):
 
     def test_struct_simple_prop_single(self):
-        overrides = [YStructStrProp]
+        overrides = [StructRStrProp]
         _yaml = """
         strprop: myval
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.strprop), YStructStrProp)
+            self.assertEqual(type(leaf.strprop), StructRStrProp)
             self.assertEqual(leaf.strprop, "myval")
 
     def test_struct_simple_prop_multi(self):
-        overrides = [YStructStrProp]
+        overrides = [StructRStrProp]
         _yaml = """
         s1:
           strprop: myval1
         s2:
           strprop: myval2
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.strprop), YStructStrProp)
+            self.assertEqual(type(leaf.strprop), StructRStrProp)
             if leaf.name == 's1':
                 self.assertEqual(leaf.strprop, "myval1")
             else:
                 self.assertEqual(leaf.strprop, "myval2")
 
     def test_struct_simple_prop_single_list(self):
-        overrides = [YStructStrProp]
+        overrides = [StructRStrProp]
         _yaml = """
         - strprop: myval1
         - strprop: myval2
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         vals = []
         for leaf in root.leaf_sections:
             for prop in leaf.strprop:
-                self.assertEqual(type(prop), YStructStrProp)
+                self.assertEqual(type(prop), StructRStrProp)
                 vals.append(prop)
 
             self.assertEqual(vals, ["myval1", "myval2"])
 
 
-class TestYStructMappedProps(utils.BaseTestCase):
+class TestStructRMappedProps(utils.BaseTestCase):
 
     def test_struct_mapped_prop_single(self):
-        overrides = [YStructPropGroup]
+        overrides = [StructRPropGroup]
         _yaml = """
         pgroup:
           strprop: myval
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.pgroup), YStructPropGroup)
+            self.assertEqual(type(leaf.pgroup), StructRPropGroup)
             self.assertEqual(len(leaf.pgroup), 1)
             for pgroup in leaf.pgroup:
                 self.assertEqual(len(pgroup), 1)
@@ -121,25 +121,25 @@ class TestYStructMappedProps(utils.BaseTestCase):
                 self.assertEqual(pgroup.strprop, "myval")
 
     def test_struct_mapped_prop_single_list(self):
-        overrides = [YStructPropGroup]
+        overrides = [StructRPropGroup]
         _yaml = """
         pgroup:
           - '1'
           - '2'
           - '3'
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         vals = []
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.pgroup), YStructPropGroup)
+            self.assertEqual(type(leaf.pgroup), StructRPropGroup)
             self.assertEqual(len(leaf.pgroup), 1)
             for pgroup in leaf.pgroup:
                 self.assertEqual(type(pgroup), MappedOverrideState)
                 members = 0
                 self.assertEqual(len(pgroup), 3)
                 for member in pgroup:
-                    self.assertEqual(type(member), YStructOverrideRawType)
+                    self.assertEqual(type(member), StructROverrideRawType)
                     members += 1
                     vals.append(str(member))
 
@@ -147,7 +147,7 @@ class TestYStructMappedProps(utils.BaseTestCase):
         self.assertEqual(vals, ['1', '2', '3'])
 
     def test_struct_mapped_prop_multi_list(self):
-        overrides = [YStructPropGroup]
+        overrides = [StructRPropGroup]
         _yaml = """
         - pgroup:
             - strprop: myval1.1
@@ -158,23 +158,23 @@ class TestYStructMappedProps(utils.BaseTestCase):
             dictprop:
               p1: myval3
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         vals = []
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.pgroup), YStructPropGroup)
+            self.assertEqual(type(leaf.pgroup), StructRPropGroup)
             self.assertEqual(len(leaf.pgroup), 3)
             for pgroup in leaf.pgroup:
                 self.assertEqual(len(pgroup), 1)
                 for member in pgroup:
-                    self.assertTrue(type(member) in [YStructStrProp,
-                                                     YStructDictProp])
+                    self.assertTrue(type(member) in [StructRStrProp,
+                                                     StructRDictProp])
                     for item in member:
                         if item._override_name == 'strprop':
-                            self.assertEqual(type(item), YStructStrProp)
+                            self.assertEqual(type(item), StructRStrProp)
                             vals.append(item)
                         else:
-                            self.assertEqual(type(item), YStructDictProp)
+                            self.assertEqual(type(item), StructRDictProp)
                             vals.append(item.p1)
 
         self.assertEqual(vals, ["myval1.1", "myval1.2", "myval2", "myval3"])
@@ -189,59 +189,59 @@ class TestYStructMappedProps(utils.BaseTestCase):
                     self.assertEqual(type(pgroup.strprop), str)
                     vals.append(pgroup.strprop)
                 else:
-                    self.assertEqual(type(pgroup.dictprop), YStructDictProp)
+                    self.assertEqual(type(pgroup.dictprop), StructRDictProp)
                     vals.append(pgroup.dictprop.p1)
 
         self.assertEqual(vals, ["myval1.2", "myval2", "myval3"])
 
     def test_struct_mapped_prop_single_member_list(self):
-        overrides = [YStructPropGroup]
+        overrides = [StructRPropGroup]
         _yaml = """
         pgroup:
           - strprop: myval1
           - strprop: myval2
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         vals = []
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.pgroup), YStructPropGroup)
+            self.assertEqual(type(leaf.pgroup), StructRPropGroup)
             # one because it is stacked
             self.assertEqual(len(leaf.pgroup), 1)
             for pgroup in leaf.pgroup:
                 for member in pgroup:
-                    self.assertEqual(type(member), YStructStrProp)
+                    self.assertEqual(type(member), StructRStrProp)
                     for item in member:
                         vals.append(item)
 
         self.assertEqual(vals, ["myval1", "myval2"])
 
     def test_struct_mapped_prop_single_member_list_nested(self):
-        overrides = [YStructPropGroup]
+        overrides = [StructRPropGroup]
         _yaml = """
         pgroup:
           - strprop: myval1
           - pgroup:
               strprop: myval2
         """
-        root = YStructSection('simpletest', yaml.safe_load(_yaml),
+        root = StructRSection('simpletest', yaml.safe_load(_yaml),
                               override_handlers=overrides)
         vals = []
         for leaf in root.leaf_sections:
-            self.assertEqual(type(leaf.pgroup), YStructPropGroup)
+            self.assertEqual(type(leaf.pgroup), StructRPropGroup)
             self.assertEqual(len(leaf.pgroup), 1)
             for pgroup in leaf.pgroup:
                 for member in pgroup:
                     if member._override_name == 'pgroup':
                         # nested pgroup
-                        self.assertEqual(type(member), YStructPropGroup)
+                        self.assertEqual(type(member), StructRPropGroup)
                         self.assertEqual(len(member), 1)
                         for _pgroup in member:
                             for _member in _pgroup:
                                 for _item in _member:
                                     vals.append(_item)
                     else:
-                        self.assertEqual(type(member), YStructStrProp)
+                        self.assertEqual(type(member), StructRStrProp)
                         for item in member:
                             vals.append(item)
 
