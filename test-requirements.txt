@@ -1,4 +1,0 @@
-flake8
-stestr
-pylint==2.8.3
-testtools
